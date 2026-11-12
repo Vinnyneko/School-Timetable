@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My School Timetable</title>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --page-bg: #f3f6fb;
+      --text: #202938;
+      --muted: #5e6878;
+      --surface: #ffffff;
+      --header-bg: #3159a5;
+      --time-header-bg: #243f78;
+      --row-header-bg: #edf2fa;
+      --week-box-bg: #ffffff;
+      --border: #dce3ed;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --button-bg: #ffffff;
+      --button-border: #cbd5e1;
+      --period-box-bg: #e5e7eb;
+      --period-box-text: #374151;
+      --lesson-highlight: #e5e7eb;
+      --lesson-highlight-border: #94a3b8;
+      --pattern-color: #3159a5;
+    }
+
+    body.dark-mode {
+      color-scheme: dark;
+      --page-bg: #151923;
+      --text: #e8edf6;
+      --muted: #aab4c5;
+      --surface: #202633;
+      --header-bg: #334c78;
+      --time-header-bg: #263a5d;
+      --row-header-bg: #293242;
+      --week-box-bg: #293242;
+      --border: #3a4557;
+      --input-bg: #202633;
+      --input-border: #4a566a;
+      --button-bg: #293242;
+      --button-border: #4a566a;
+      --period-box-bg: #3a414d;
+      --period-box-text: #f1f5f9;
+      --lesson-highlight: #3a414d;
+      --lesson-highlight-border: #94a3b8;
+      --pattern-color: #ffffff;
+    }
+
+    body.custom-mode,
+    body.multi-color-mode {
+      color-scheme: light;
+    }
+
+    body.custom-mode {
+      --custom-color: #7c3aed;
+      --page-bg: color-mix(in srgb, var(--custom-color) 8%, white);
+      --text: color-mix(in srgb, var(--custom-color) 55%, #202938);
+      --muted: color-mix(in srgb, var(--custom-color) 45%, #687386);
+      --surface: color-mix(in srgb, var(--custom-color) 3%, white);
+      --header-bg: color-mix(in srgb, var(--custom-color) 76%, white);
+      --time-header-bg: color-mix(in srgb, var(--custom-color) 88%, #202938);
+      --row-header-bg: color-mix(in srgb, var(--custom-color) 12%, white);
+      --week-box-bg: var(--surface);
+      --border: color-mix(in srgb, var(--custom-color) 28%, white);
+      --input-bg: var(--surface);
+      --input-border: color-mix(in srgb, var(--custom-color) 24%, white);
+      --button-bg: var(--surface);
+      --button-border: var(--border);
+      --period-box-bg: color-mix(in srgb, var(--custom-color) 12%, white);
+      --period-box-text: var(--text);
+      --lesson-highlight: color-mix(in srgb, var(--custom-color) 20%, white);
+      --lesson-highlight-border: var(--custom-color);
+      --pattern-color: var(--custom-color);
+    }
+
+    body.multi-color-mode {
+      background: var(--page-bg);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      position: relative;
+      isolation: isolate;
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background: var(--page-bg);
+      transition: color 0.25s ease, background-color 0.25s ease;
+    }
+
+    .pattern-background {
+      position: fixed;
+      z-index: -1;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      color: var(--pattern-color);
+    }
+
+    .pattern-background span {
+      position: absolute;
+      left: var(--left);
+      top: var(--top);
+      color: currentColor;
+      opacity: 0.2;
+      font-size: var(--size);
+      animation: pattern-float var(--duration) ease-in-out var(--delay) infinite alternate;
+    }
+
+    .pattern-background img {
+      position: absolute;
+      height: auto;
+      object-fit: contain;
+      animation: pattern-float var(--duration) ease-in-out var(--delay) infinite alternate;
+    }
+
+    @keyframes pattern-float {
+      from { transform: translateY(-10px) rotate(-12deg); }
+      to { transform: translateY(12px) rotate(12deg); }
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    h1:focus-visible {
+      outline: 2px solid #7199eb;
+      outline-offset: 4px;
+    }
+
+    .title-options,
+    .week-controls {
+      display: flex;
+      width: fit-content;
+      max-width: 100%;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 8px auto;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .title-options {
+      background: var(--surface);
+    }
+
+    .week-controls {
+      background: var(--week-box-bg);
+    }
+
+    .title-options[hidden],
+    .appearance-menu[hidden],
+    .pattern-menu[hidden],
+    .custom-color-control[hidden],
+    .custom-pattern-control[hidden],
+    .multi-color-control[hidden],
+    .notes-panel[hidden],
+    .drawing-panel[hidden],
+    .gallery-panel[hidden] {
+      display: none;
+    }
+
+    .title-options label,
+    .week-controls label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    select {
+      padding: 8px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      color: var(--text);
+      font: inherit;
+      background: var(--input-bg);
+      cursor: pointer;
+    }
+
+    .hint {
+      margin: 10px 0 14px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .viewing-bar {
+      position: relative;
+      z-index: 5;
+      max-width: 1200px;
+      margin: 16px auto 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .viewing-heading {
+      margin: 0;
+      font-size: 1.25rem;
+      text-align: left;
+    }
+
+    .date-and-theme {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 7px;
+    }
+
+    .current-date {
+      color: var(--muted);
+      font-size: 0.95rem;
+      text-align: right;
+    }
+
+    /* Icons now run horizontally */
+    .appearance-picker {
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .appearance-button,
+    .pattern-button,
+    .drawing-button,
+    .gallery-button {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      padding: 6px;
+      border: 1px solid var(--button-border);
+      border-radius: 50%;
+      color: var(--text);
+      background: var(--button-bg);
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      flex: 0 0 auto;
+    }
+
+    .appearance-button:hover,
+    .pattern-button:hover,
+    .drawing-button:hover,
+    .gallery-button:hover {
+      transform: scale(1.08);
+    }
+
+    .appearance-button:focus-visible,
+    .pattern-button:focus-visible,
+    .drawing-button:focus-visible,
+    .gallery-button:focus-visible {
+      outline: 2px solid #7199eb;
+      outline-offset: 3px;
+    }
+
+    .appearance-menu,
+    .pattern-menu {
+      position: absolute;
+      z-index: 20;
+      right: 0;
+      top: 48px;
+      display: grid;
+      min-width: 155px;
+      max-width: min(250px, calc(100vw - 24px));
+      max-height: 60vh;
+      overflow-y: auto;
+      gap: 3px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: 0 6px 18px #17243b26;
+    }
+
+    .appearance-menu button,
+    .pattern-menu button {
+      width: 100%;
+      padding: 7px 9px;
+      border: 0;
+      border-radius: 7px;
+      color: var(--text);
+      font: inherit;
+      font-size: 0.92rem;
+      text-align: left;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .appearance-menu button:hover,
+    .appearance-menu button[aria-pressed="true"],
+    .pattern-menu button:hover,
+    .pattern-menu button[aria-pressed="true"] {
+      background: var(--row-header-bg);
+    }
+
+    .custom-color-control {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 9px;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .custom-color-control input[type="color"] {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .multi-color-control {
+      display: grid;
+      gap: 5px;
+      padding: 6px 9px;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .multi-color-control label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .multi-color-control input[type="color"] {
+      width: 30px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .custom-pattern-control {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 9px;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .custom-pattern-control input {
+      width: 160px;
+      max-width: 100%;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .current-period {
+      width: fit-content;
+      max-width: 1200px;
+      margin: 0 auto 10px;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--period-box-text);
+      background: var(--period-box-bg);
+      font-weight: 600;
+      text-align: center;
+    }
+
+    td.current-lesson {
+      background: var(--lesson-highlight);
+      box-shadow: inset 0 0 0 3px var(--lesson-highlight-border);
+    }
+
+    .table-wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      overflow-x: auto;
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 4px 18px #1b2b4518;
+    }
+
+    table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    thead th {
+      color: white;
+      background: var(--header-bg);
+    }
+
+    thead th:first-child {
+      min-width: 145px;
+      background: var(--time-header-bg);
+    }
+
+    tbody th {
+      width: 145px;
+      background: var(--row-header-bg);
+      font-weight: 600;
+    }
+
+    .time {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.85em;
+      font-weight: normal;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      min-height: 42px;
+      padding: 8px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      color: var(--text);
+      font: inherit;
+      text-align: center;
+      background: var(--input-bg);
+    }
+
+    input[type="text"]:focus {
+      outline: 2px solid #7199eb;
+      border-color: transparent;
+    }
+
+    .status {
+      min-height: 20px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.9em;
+      text-align: center;
+    }
+
+    .notes-button {
+      position: fixed;
+      z-index: 30;
+      right: 20px;
+      bottom: 20px;
+      padding: 10px 14px;
+      border: 1px solid var(--button-border);
+      border-radius: 24px;
+      color: var(--text);
+      background: var(--surface);
+      box-shadow: 0 4px 14px #22324a30;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .notes-button:focus-visible {
+      outline: 2px solid #7199eb;
+      outline-offset: 3px;
+    }
+
+    .notes-panel {
+      position: fixed;
+      z-index: 31;
+      right: 20px;
+      bottom: 70px;
+      width: min(300px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      background: var(--surface);
+      box-shadow: 0 6px 18px #17243b26;
+    }
+
+    .notes-panel h2 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    .notes-panel p {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .drawing-panel,
+    .gallery-panel {
+      position: fixed;
+      z-index: 40;
+      top: 50%;
+      left: 50%;
+      width: min(760px, calc(100vw - 28px));
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      background: var(--surface);
+      box-shadow: 0 12px 45px #17243b55;
+      transform: translate(-50%, -50%);
+    }
+
+    .drawing-panel[hidden],
+    .gallery-panel[hidden] {
+      display: none;
+    }
+
+    .drawing-header,
+    .gallery-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .drawing-header h2,
+    .gallery-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .drawing-close,
+    .drawing-clear,
+    .tool-button,
+    .gallery-close {
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 1px solid var(--button-border);
+      border-radius: 7px;
+      color: var(--text);
+      background: var(--button-bg);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .drawing-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+
+    .drawing-toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .drawing-toolbar input[type="color"] {
+      width: 34px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .drawing-toolbar select {
+      min-height: 36px;
+      padding: 6px;
+    }
+
+    .tool-button[aria-pressed="true"] {
+      border-color: #7199eb;
+      background: var(--row-header-bg);
+      box-shadow: inset 0 0 0 1px #7199eb;
+    }
+
+    .drawing-canvas-wrap {
+      width: 100%;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+      touch-action: none;
+    }
+
+    #drawingCanvas {
+      display: block;
+      width: 100%;
+      height: min(55vh, 440px);
+      background: #ffffff;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .drawing-hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .gallery-empty {
+      min-height: 180px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .drawing-overlay {
+      position: fixed;
+      z-index: 39;
+      inset: 0;
+      background: #0d14205c;
+    }
+
+    .drawing-overlay[hidden] {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+
+      .title-options,
+      .week-controls {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .viewing-bar { margin-top: 12px; }
+
+      .drawing-panel,
+      .gallery-panel {
+        padding: 11px;
+      }
+
+      .drawing-toolbar {
+        gap: 5px;
+      }
+
+      .drawing-toolbar label {
+        font-size: 0.82rem;
+      }
+
+      .appearance-picker {
+        gap: 4px;
+      }
+
+      .appearance-button,
+      .pattern-button,
+      .drawing-button,
+      .gallery-button {
+        width: 38px;
+        height: 38px;
+      }
+    }
+
+    @media (max-width: 450px) {
+      .title-options,
+      .week-controls {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .viewing-bar { align-items: flex-start; }
+      .current-date { font-size: 0.8rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pattern-background span,
+      .pattern-background img {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="patternBackground" class="pattern-background" aria-hidden="true"></div>
+
+  <h1 id="pageTitle" role="button" tabindex="0" aria-expanded="false">
+    Year 9 Term 3 Timetable
+  </h1>
+
+  <div class="title-options" id="titleOptions" hidden>
+    <label>
+      Year
+      <select id="yearSelect">
+        <option>Year 7</option>
+        <option>Year 8</option>
+        <option selected>Year 9</option>
+        <option>Year 10</option>
+        <option>Year 11</option>
+        <option>Year 12</option>
+      </select>
+    </label>
+
+    <label>
+      Term
+      <select id="termSelect">
+        <option>Term 1</option>
+        <option>Term 2</option>
+        <option selected>Term 3</option>
+        <option>Term 4</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="week-controls">
+    <label for="weekSelect">Timetable to view and edit:</label>
+    <select id="weekSelect">
+      <option value="A">Week A</option>
+      <option value="B">Week B</option>
+    </select>
+  </div>
+
+  <p class="hint">
+    Click a lesson box to add or change a lesson. Changes save automatically.
+  </p>
+
+  <div class="viewing-bar">
+    <h2 class="viewing-heading" id="viewingHeading">Week A Timetable</h2>
+
+    <div class="date-and-theme">
+      <div class="appearance-picker">
+        <button id="appearanceButton" class="appearance-button" type="button"
+          aria-label="Choose timetable appearance" aria-expanded="false"
+          aria-controls="appearanceMenu" title="Choose appearance">🖌️</button>
+
+        <div id="appearanceMenu" class="appearance-menu" hidden>
+          <button type="button" data-theme="light">☀️ Light</button>
+          <button type="button" data-theme="dark">🌙 Dark</button>
+          <button type="button" data-theme="custom">🎨 Custom colour</button>
+
+          <label id="customColorControl" class="custom-color-control" hidden>
+            Choose colour
+            <input id="customColorInput" type="color" value="#7c3aed">
+          </label>
+
+          <button type="button" data-theme="multi">🌈 Multi-Colour</button>
+
+          <div id="multiColorControl" class="multi-color-control" hidden>
+            <label>Background <input type="color" data-multi-color="background" value="#f3f6fb"></label>
+            <label>Text <input type="color" data-multi-color="text" value="#202938"></label>
+            <label>Day headings <input type="color" data-multi-color="days" value="#3159a5"></label>
+            <label>Times and period labels <input type="color" data-multi-color="times" value="#243f78"></label>
+            <label>Week A/B controls <input type="color" data-multi-color="week" value="#ffffff"></label>
+            <label>Lesson boxes <input type="color" data-multi-color="lessons" value="#ffffff"></label>
+            <label>Patterns <input type="color" data-multi-color="pattern" value="#7c3aed"></label>
+          </div>
+        </div>
+
+        <button id="patternButton" class="pattern-button" type="button"
+          aria-label="Choose a background pattern" aria-expanded="false"
+          aria-controls="patternMenu" title="Choose a background pattern">✦</button>
+
+        <div id="patternMenu" class="pattern-menu" hidden>
+          <button type="button" data-pattern="none">No pattern</button>
+          <button type="button" data-pattern="stars">★ Stars</button>
+          <button type="button" data-pattern="hearts">♥ Hearts</button>
+          <button type="button" data-pattern="dots">● Polka dots</button>
+          <button type="button" data-pattern="sparkles">✦ Sparkles</button>
+          <button type="button" data-pattern="flowers">✿ Flowers</button>
+          <button type="button" data-pattern="paws">🐾 Paw prints</button>
+          <button type="button" data-pattern="moons">☾ Moons</button>
+          <button type="button" data-pattern="clouds">☁ Clouds</button>
+          <button type="button" data-pattern="catface">Kitty Face :3</button>
+          <button type="button" data-pattern="music">♪ Music notes</button>
+          <button type="button" data-pattern="diamonds">◆ Diamonds</button>
+          <button type="button" data-pattern="custom">🖼️ Custom pattern</button>
+
+          <label id="customPatternControl" class="custom-pattern-control" hidden>
+            Choose image
+            <input id="customPatternInput" type="file" accept="image/*">
+          </label>
+        </div>
+
+        <button id="drawingButton" class="drawing-button" type="button"
+          aria-label="Open drawing notepad" aria-expanded="false"
+          aria-controls="drawingPanel" title="Drawing notepad">📝</button>
+
+        <button id="galleryButton" class="gallery-button" type="button"
+          aria-label="Open fanart gallery" aria-expanded="false"
+          aria-controls="galleryPanel" title="Fanart gallery">🖼️</button>
+      </div>
+
+      <div id="currentDate" class="current-date"></div>
+    </div>
+  </div>
+
+  <div id="currentPeriod" class="current-period" aria-live="polite"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Monday</th>
+          <th>Tuesday</th>
+          <th>Wednesday</th>
+          <th>Thursday</th>
+          <th>Friday</th>
+        </tr>
+      </thead>
+      <tbody id="timetable"></tbody>
+    </table>
+  </div>
+
+  <div class="status" id="status" aria-live="polite"></div>
+
+  <button id="notesButton" class="notes-button" type="button"
+    aria-expanded="false" aria-controls="notesPanel">📝 Notes &amp; Updates</button>
+
+  <section id="notesPanel" class="notes-panel" hidden>
+    <h2>Notes &amp; Updates</h2>
+    <p id="notesMessage">V6 is hereeee ♡(˶˃ᆺ˂˶). I added a notepad/drawing section so you can add personal notes. I have also added a Fanart section for any of u who want to be on the timetable or Showcase art (it can be anything not just art btw). Anyway hope u like itttt (｡> ᴗ ☆｡) ‧₊˚ 
+     
+          へ   ♡   ╱|、     
+     ૮  -   ՛ )      (`   -  7
+       /   ⁻  ៸|       |、⁻〵
+  乀 (ˍ, ل ل      じしˍ,)ノ⋆｡⋆
+Kittys (⟡ᗜ⟡) !! 
+</p>
+  </section>
+
+  <div id="drawingOverlay" class="drawing-overlay" hidden></div>
+
+  <section id="drawingPanel" class="drawing-panel" role="dialog"
+    aria-modal="true" aria-labelledby="drawingTitle" hidden>
+    <div class="drawing-header">
+      <h2 id="drawingTitle">Drawing Notepad</h2>
+      <button id="drawingClose" class="drawing-close" type="button"
+        aria-label="Close notepad">✕</button>
+    </div>
+
+    <div class="drawing-toolbar">
+      <label>
+        Colour
+        <input id="drawingColor" type="color" value="#202938">
+      </label>
+
+      <label>
+        Brush
+        <select id="brushSize" aria-label="Brush thickness">
+          <option value="2">Small</option>
+          <option value="5" selected>Medium</option>
+          <option value="10">Large</option>
+          <option value="18">Extra large</option>
+        </select>
+      </label>
+
+      <button class="tool-button" type="button" data-tool="pen" aria-pressed="true">✎ Pen</button>
+      <button class="tool-button" type="button" data-tool="eraser" aria-pressed="false">⌫ Eraser</button>
+      <button id="exportDrawing" class="drawing-clear" type="button">⬇ Export PNG</button>
+      <button id="drawingClear" class="drawing-clear" type="button">Clear</button>
+    </div>
+
+    <div class="drawing-canvas-wrap">
+      <canvas id="drawingCanvas" aria-label="Drawing note area"></canvas>
+    </div>
+
+    <p class="drawing-hint">
+      Use your mouse, finger, or stylus to draw. Your note saves automatically on this device.
+    </p>
+  </section>
+
+  <section id="galleryPanel" class="gallery-panel" role="dialog"
+    aria-modal="true" aria-labelledby="galleryTitle" hidden>
+    <div class="gallery-header">
+      <h2 id="galleryTitle">Fanart Gallery</h2>
+      <button id="galleryClose" class="gallery-close" type="button"
+        aria-label="Close gallery">✕</button>
+    </div>
+    <div class="gallery-empty">The gallery is empty for now. Soooo send me some :) </div>
+  </section>
+
+  <script>
+    document.getElementById("currentDate").textContent =
+      new Intl.DateTimeFormat(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      }).format(new Date());
+
+    const appearanceButton = document.getElementById("appearanceButton");
+    const appearanceMenu = document.getElementById("appearanceMenu");
+    const appearanceOptions = appearanceMenu.querySelectorAll("[data-theme]");
+    const customColorControl = document.getElementById("customColorControl");
+    const customColorInput = document.getElementById("customColorInput");
+    const multiColorControl = document.getElementById("multiColorControl");
+    const multiColorInputs = multiColorControl.querySelectorAll("[data-multi-color]");
+
+    const multiColorStorageKey = "timetableMultiColors";
+    const multiColorDefaults = {
+      background: "#f3f6fb",
+      text: "#202938",
+      days: "#3159a5",
+      times: "#243f78",
+      week: "#ffffff",
+      lessons: "#ffffff",
+      pattern: "#7c3aed"
+    };
+
+    let multiColors = { ...multiColorDefaults };
+
+    try {
+      multiColors = {
+        ...multiColorDefaults,
+        ...JSON.parse(localStorage.getItem(multiColorStorageKey) || "{}")
+      };
+    } catch {
+      multiColors = { ...multiColorDefaults };
+    }
+
+    const multiColorVariables = {
+      background: "--page-bg",
+      text: "--text",
+      days: "--header-bg",
+      times: "--time-header-bg",
+      week: "--week-box-bg",
+      lessons: "--surface",
+      pattern: "--pattern-color"
+    };
+
+    const patternButton = document.getElementById("patternButton");
+    const patternMenu = document.getElementById("patternMenu");
+    const patternBackground = document.getElementById("patternBackground");
+    const patternOptions = patternMenu.querySelectorAll("[data-pattern]");
+    const customPatternControl = document.getElementById("customPatternControl");
+    const customPatternInput = document.getElementById("customPatternInput");
+
+    const notesButton = document.getElementById("notesButton");
+    const notesPanel = document.getElementById("notesPanel");
+
+    const drawingButton = document.getElementById("drawingButton");
+    const drawingPanel = document.getElementById("drawingPanel");
+    const drawingOverlay = document.getElementById("drawingOverlay");
+    const drawingClose = document.getElementById("drawingClose");
+    const drawingCanvas = document.getElementById("drawingCanvas");
+    const drawingContext = drawingCanvas.getContext("2d");
+    const drawingColor = document.getElementById("drawingColor");
+    const brushSize = document.getElementById("brushSize");
+    const exportDrawing = document.getElementById("exportDrawing");
+    const drawingClear = document.getElementById("drawingClear");
+    const toolButtons = drawingPanel.querySelectorAll("[data-tool]");
+
+    const galleryButton = document.getElementById("galleryButton");
+    const galleryPanel = document.getElementById("galleryPanel");
+    const galleryClose = document.getElementById("galleryClose");
+
+    const drawingStorageKey = "timetableDrawingNote";
+    let drawingTool = "pen";
+    let drawing = false;
+    let lastPoint = null;
+    let savedImage = null;
+
+    notesButton.addEventListener("click", () => {
+      const isOpening = notesPanel.hidden;
+      notesPanel.hidden = !isOpening;
+      notesButton.setAttribute("aria-expanded", String(isOpening));
+    });
+
+    function applyMultiColors() {
+      Object.entries(multiColorVariables).forEach(([key, variable]) => {
+        document.body.style.setProperty(variable, multiColors[key]);
+      });
+
+      document.body.style.setProperty("--muted", multiColors.text);
+      document.body.style.setProperty("--row-header-bg", multiColors.times);
+      document.body.style.setProperty("--border", multiColors.times);
+      document.body.style.setProperty("--input-bg", multiColors.lessons);
+      document.body.style.setProperty("--input-border", multiColors.times);
+      document.body.style.setProperty("--button-bg", multiColors.week);
+      document.body.style.setProperty("--button-border", multiColors.times);
+      document.body.style.setProperty("--period-box-bg", multiColors.times);
+      document.body.style.setProperty("--period-box-text", multiColors.text);
+      document.body.style.setProperty("--lesson-highlight", multiColors.week);
+      document.body.style.setProperty("--lesson-highlight-border", multiColors.times);
+      patternBackground.style.color = multiColors.pattern;
+    }
+
+    multiColorInputs.forEach((input) => {
+      const key = input.dataset.multiColor;
+      input.value = multiColors[key];
+
+      input.addEventListener("input", () => {
+        multiColors[key] = input.value;
+        localStorage.setItem(multiColorStorageKey, JSON.stringify(multiColors));
+
+        if (document.body.classList.contains("multi-color-mode")) {
+          applyMultiColors();
+        }
+      });
+    });
+
+    const savedColor = localStorage.getItem("timetableCustomColor");
+    if (savedColor) customColorInput.value = savedColor;
+
+    function clearCustomThemeProperties() {
+      [
+        "--page-bg", "--text", "--muted", "--surface", "--header-bg",
+        "--time-header-bg", "--row-header-bg", "--week-box-bg", "--border",
+        "--input-bg", "--input-border", "--button-bg", "--button-border",
+        "--period-box-bg", "--period-box-text", "--lesson-highlight",
+        "--lesson-highlight-border", "--pattern-color", "--custom-color"
+      ].forEach((property) => {
+        document.body.style.removeProperty(property);
+      });
+    }
+
+    function updatePatternColor() {
+      if (document.body.classList.contains("multi-color-mode")) {
+        patternBackground.style.color = multiColors.pattern;
+      } else if (document.body.classList.contains("custom-mode")) {
+        patternBackground.style.color = customColorInput.value;
+      } else if (document.body.classList.contains("dark-mode")) {
+        patternBackground.style.color = "#ffffff";
+      } else {
+        patternBackground.style.color = "#3159a5";
+      }
+    }
+
+    function openPatternDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open("TimetablePatternDB", 1);
+
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains("patterns")) {
+            request.result.createObjectStore("patterns");
+          }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function savePatternImage(file) {
+      const db = await openPatternDatabase();
+
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction("patterns", "readwrite");
+        transaction.objectStore("patterns").put(file, "customPattern");
+
+        transaction.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+
+        transaction.onerror = () => {
+          const error = transaction.error;
+          db.close();
+          reject(error);
+        };
+      });
+    }
+
+    async function loadPatternImage() {
+      const db = await openPatternDatabase();
+
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction("patterns", "readonly");
+        const request = transaction.objectStore("patterns").get("customPattern");
+
+        request.onsuccess = () => {
+          const file = request.result || null;
+          db.close();
+          resolve(file);
+        };
+
+        request.onerror = () => {
+          const error = request.error;
+          db.close();
+          reject(error);
+        };
+      });
+    }
+
+    let customPatternUrl = null;
+
+    function showCustomPattern(file) {
+      if (customPatternUrl) URL.revokeObjectURL(customPatternUrl);
+      customPatternUrl = URL.createObjectURL(file);
+      setPattern("custom");
+    }
+
+    async function restoreCustomPattern() {
+      try {
+        const file = await loadPatternImage();
+
+        if (file && localStorage.getItem("timetablePattern") === "custom") {
+          showCustomPattern(file);
+        }
+      } catch (error) {
+        console.error("Could not load the saved custom pattern:", error);
+      }
+    }
+
+    function setPattern(pattern) {
+      patternBackground.replaceChildren();
+      customPatternControl.hidden = pattern !== "custom";
+
+      const symbols = {
+        stars: "★",
+        hearts: "♥",
+        dots: "●",
+        sparkles: "✦",
+        flowers: "✿",
+        paws: "🐾",
+        moons: "☾",
+        clouds: "☁",
+        catface: ":3",
+        music: "♪",
+        diamonds: "◆"
+      };
+
+      if (pattern === "custom" && customPatternUrl) {
+        for (let i = 0; i < 30; i++) {
+          const image = document.createElement("img");
+          image.src = customPatternUrl;
+          image.alt = "";
+          image.style.left = `${Math.random() * 94}%`;
+          image.style.top = `${Math.random() * 90}%`;
+          image.style.width = `${40 + Math.random() * 50}px`;
+          image.style.opacity = "0.3";
+          image.style.setProperty("--duration", `${3 + Math.random() * 5}s`);
+          image.style.setProperty("--delay", `${-Math.random() * 5}s`);
+          patternBackground.appendChild(image);
+        }
+      } else if (symbols[pattern]) {
+        updatePatternColor();
+
+        const count = pattern === "dots" ? 50 : 40;
+        const biggerPattern = ["dots", "moons", "music"].includes(pattern);
+
+        for (let i = 0; i < count; i++) {
+          const decoration = document.createElement("span");
+          decoration.textContent = symbols[pattern];
+          decoration.style.setProperty("--left", `${Math.random() * 96}%`);
+          decoration.style.setProperty("--top", `${Math.random() * 94}%`);
+          decoration.style.setProperty(
+            "--size",
+            pattern === "dots"
+              ? `${14 + Math.random() * 12}px`
+              : biggerPattern
+                ? `${28 + Math.random() * 24}px`
+                : `${16 + Math.random() * 20}px`
+          );
+          decoration.style.setProperty("--duration", `${3 + Math.random() * 5}s`);
+          decoration.style.setProperty("--delay", `${-Math.random() * 5}s`);
+          patternBackground.appendChild(decoration);
+        }
+      }
+
+      localStorage.setItem("timetablePattern", pattern);
+
+      patternOptions.forEach((option) => {
+        option.setAttribute(
+          "aria-pressed",
+          String(option.dataset.pattern === pattern)
+        );
+      });
+    }
+
+    function setAppearance(theme) {
+      document.body.classList.remove(
+        "dark-mode",
+        "custom-mode",
+        "multi-color-mode"
+      );
+      clearCustomThemeProperties();
+
+      customColorControl.hidden = theme !== "custom";
+      multiColorControl.hidden = theme !== "multi";
+
+      if (theme === "dark") {
+        document.body.classList.add("dark-mode");
+      } else if (theme === "custom") {
+        document.body.classList.add("custom-mode");
+        document.body.style.setProperty("--custom-color", customColorInput.value);
+      } else if (theme === "multi") {
+        document.body.classList.add("multi-color-mode");
+        applyMultiColors();
+      }
+
+      localStorage.setItem("timetableAppearance", theme);
+
+      appearanceOptions.forEach((option) => {
+        option.setAttribute(
+          "aria-pressed",
+          String(option.dataset.theme === theme)
+        );
+      });
+
+      updatePatternColor();
+    }
+
+    setAppearance(localStorage.getItem("timetableAppearance") || "light");
+    setPattern(localStorage.getItem("timetablePattern") || "none");
+    restoreCustomPattern();
+
+    appearanceButton.addEventListener("click", () => {
+      const isOpen = !appearanceMenu.hidden;
+      appearanceMenu.hidden = isOpen;
+      appearanceButton.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    appearanceOptions.forEach((option) => {
+      option.addEventListener("click", () => {
+        const theme = option.dataset.theme;
+        setAppearance(theme);
+
+        if (theme !== "custom" && theme !== "multi") {
+          appearanceMenu.hidden = true;
+          appearanceButton.setAttribute("aria-expanded", "false");
+        }
+      });
+    });
+
+    customColorInput.addEventListener("input", () => {
+      document.body.classList.add("custom-mode");
+      document.body.classList.remove("dark-mode", "multi-color-mode");
+      multiColorControl.hidden = true;
+      customColorControl.hidden = false;
+      document.body.style.setProperty("--custom-color", customColorInput.value);
+
+      localStorage.setItem("timetableCustomColor", customColorInput.value);
+      localStorage.setItem("timetableAppearance", "custom");
+
+      appearanceOptions.forEach((option) => {
+        option.setAttribute(
+          "aria-pressed",
+          String(option.dataset.theme === "custom")
+        );
+      });
+
+      updatePatternColor();
+    });
+
+    customColorInput.addEventListener("change", () => {
+      appearanceMenu.hidden = true;
+      appearanceButton.setAttribute("aria-expanded", "false");
+    });
+
+    patternButton.addEventListener("click", () => {
+      const isOpen = !patternMenu.hidden;
+      patternMenu.hidden = isOpen;
+      patternButton.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    patternOptions.forEach((option) => {
+      option.addEventListener("click", () => {
+        setPattern(option.dataset.pattern);
+
+        if (option.dataset.pattern !== "custom" || customPatternUrl) {
+          patternMenu.hidden = true;
+          patternButton.setAttribute("aria-expanded", "false");
+        }
+      });
+    });
+
+    customPatternInput.addEventListener("change", async () => {
+      const file = customPatternInput.files[0];
+
+      if (!file || !file.type.startsWith("image/")) return;
+
+      try {
+        await savePatternImage(file);
+        showCustomPattern(file);
+        patternMenu.hidden = true;
+        patternButton.setAttribute("aria-expanded", "false");
+      } catch (error) {
+        console.error("Could not save custom pattern:", error);
+        alert("The image could not be saved in this browser.");
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".appearance-picker")) {
+        appearanceMenu.hidden = true;
+        patternMenu.hidden = true;
+        appearanceButton.setAttribute("aria-expanded", "false");
+        patternButton.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    /* Drawing notepad */
+    function getCanvasSize() {
+      const rect = drawingCanvas.getBoundingClientRect();
+      return {
+        width: Math.max(1, Math.round(rect.width)),
+        height: Math.max(1, Math.round(rect.height))
+      };
+    }
+
+    function prepareCanvas() {
+      const { width, height } = getCanvasSize();
+      const pixelRatio = window.devicePixelRatio || 1;
+      const previous = document.createElement("canvas");
+
+      if (drawingCanvas.width && drawingCanvas.height) {
+        previous.width = drawingCanvas.width;
+        previous.height = drawingCanvas.height;
+        previous.getContext("2d").drawImage(drawingCanvas, 0, 0);
+      }
+
+      drawingCanvas.width = width * pixelRatio;
+      drawingCanvas.height = height * pixelRatio;
+      drawingContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      drawingContext.fillStyle = "#ffffff";
+      drawingContext.fillRect(0, 0, width, height);
+
+      if (previous.width && previous.height) {
+        drawingContext.drawImage(
+          previous,
+          0, 0, previous.width, previous.height,
+          0, 0, width, height
+        );
+      } else if (savedImage) {
+        drawingContext.drawImage(savedImage, 0, 0, width, height);
+      }
+    }
+
+    function saveDrawing() {
+      try {
+        localStorage.setItem(
+          "timetableDrawingNote",
+          drawingCanvas.toDataURL("image/png")
+        );
+      } catch (error) {
+        console.error("Could not save drawing:", error);
+      }
+    }
+
+    function restoreDrawing() {
+      const data = localStorage.getItem("timetableDrawingNote");
+      if (!data) return;
+
+      const image = new Image();
+      image.onload = () => {
+        savedImage = image;
+        if (!drawingPanel.hidden) prepareCanvas();
+      };
+      image.src = data;
+    }
+
+    function openDrawingPad() {
+      drawingOverlay.hidden = false;
+      drawingPanel.hidden = false;
+      drawingButton.setAttribute("aria-expanded", "true");
+
+      requestAnimationFrame(() => {
+        prepareCanvas();
+        drawingClose.focus();
+      });
+    }
+
+    function closeDrawingPad() {
+      drawingOverlay.hidden = true;
+      drawingPanel.hidden = true;
+      drawingButton.setAttribute("aria-expanded", "false");
+      drawingButton.focus();
+    }
+
+    drawingButton.addEventListener("click", openDrawingPad);
+    drawingClose.addEventListener("click", closeDrawingPad);
+
+    function openGallery() {
+      drawingOverlay.hidden = false;
+      galleryPanel.hidden = false;
+      galleryButton.setAttribute("aria-expanded", "true");
+      galleryClose.focus();
+    }
+
+    function closeGallery() {
+      galleryPanel.hidden = true;
+      drawingOverlay.hidden = true;
+      galleryButton.setAttribute("aria-expanded", "false");
+      galleryButton.focus();
+    }
+
+    galleryButton.addEventListener("click", openGallery);
+    galleryClose.addEventListener("click", closeGallery);
+
+    drawingOverlay.addEventListener("click", () => {
+      if (!drawingPanel.hidden) closeDrawingPad();
+      if (!galleryPanel.hidden) closeGallery();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (!drawingPanel.hidden) closeDrawingPad();
+      if (!galleryPanel.hidden) closeGallery();
+    });
+
+    toolButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        drawingTool = button.dataset.tool;
+
+        toolButtons.forEach((toolButton) => {
+          toolButton.setAttribute(
+            "aria-pressed",
+            String(toolButton === button)
+          );
+        });
+      });
+    });
+
+    function pointerPosition(event) {
+      const rect = drawingCanvas.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+    }
+
+    drawingCanvas.addEventListener("pointerdown", (event) => {
+      if (drawingPanel.hidden) return;
+
+      event.preventDefault();
+      drawingCanvas.setPointerCapture(event.pointerId);
+      drawing = true;
+      lastPoint = pointerPosition(event);
+
+      drawingContext.beginPath();
+      drawingContext.moveTo(lastPoint.x, lastPoint.y);
+      drawingContext.lineCap = "round";
+      drawingContext.lineJoin = "round";
+      drawingContext.lineWidth = Number(brushSize.value);
+      drawingContext.strokeStyle =
+        drawingTool === "eraser" ? "#ffffff" : drawingColor.value;
+
+      drawingContext.lineTo(lastPoint.x + 0.01, lastPoint.y + 0.01);
+      drawingContext.stroke();
+      saveDrawing();
+    });
+
+    drawingCanvas.addEventListener("pointermove", (event) => {
+      if (!drawing || !lastPoint) return;
+
+      event.preventDefault();
+      const point = pointerPosition(event);
+
+      drawingContext.beginPath();
+      drawingContext.moveTo(lastPoint.x, lastPoint.y);
+      drawingContext.lineTo(point.x, point.y);
+      drawingContext.lineCap = "round";
+      drawingContext.lineJoin = "round";
+      drawingContext.lineWidth = Number(brushSize.value);
+      drawingContext.strokeStyle =
+        drawingTool === "eraser" ? "#ffffff" : drawingColor.value;
+      drawingContext.stroke();
+
+      lastPoint = point;
+      saveDrawing();
+    });
+
+    function finishDrawing() {
+      if (!drawing) return;
+      drawing = false;
+      lastPoint = null;
+      saveDrawing();
+    }
+
+    drawingCanvas.addEventListener("pointerup", finishDrawing);
+    drawingCanvas.addEventListener("pointercancel", finishDrawing);
+
+    exportDrawing.addEventListener("click", () => {
+      const link = document.createElement("a");
+      link.download = "my-notes.png";
+      link.href = drawingCanvas.toDataURL("image/png");
+      link.click();
+    });
+
+    drawingClear.addEventListener("click", () => {
+      const { width, height } = getCanvasSize();
+      drawingContext.clearRect(0, 0, width, height);
+      drawingContext.fillStyle = "#ffffff";
+      drawingContext.fillRect(0, 0, width, height);
+      savedImage = null;
+      localStorage.removeItem("timetableDrawingNote");
+    });
+
+    window.addEventListener("resize", () => {
+      if (!drawingPanel.hidden) prepareCanvas();
+    });
+
+    restoreDrawing();
+
+    const periods = [
+      { name: "PC", time: "8:31–8:46", start: "08:31", end: "08:46", editable: false },
+      { name: "Period 1", time: "8:48–9:48", start: "08:48", end: "09:48" },
+      { name: "Period 2", time: "9:50–10:50", start: "09:50", end: "10:50" },
+      { name: "Lunch 1", time: "10:50–11:30", start: "10:50", end: "11:30", editable: false },
+      { name: "Period 3", time: "11:32–12:32", start: "11:32", end: "12:32" },
+      { name: "Period 4", time: "12:34–1:34", start: "12:34", end: "13:34" },
+      { name: "Lunch 2", time: "1:34–1:54", start: "13:34", end: "13:54", editable: false },
+      { name: "Period 5", time: "1:56–2:56", start: "13:56", end: "14:56" }
+    ];
+
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const lessonsStorageKey = "mySchoolTimetables";
+    const titleStorageKey = "timetableTitle";
+    const selectedWeekStorageKey = "selectedTimetableWeek";
+
+    const timetableBody = document.getElementById("timetable");
+    const currentPeriodElement = document.getElementById("currentPeriod");
+    const status = document.getElementById("status");
+    const weekSelect = document.getElementById("weekSelect");
+    const viewingHeading = document.getElementById("viewingHeading");
+    const title = document.getElementById("pageTitle");
+    const titleOptions = document.getElementById("titleOptions");
+    const yearSelect = document.getElementById("yearSelect");
+    const termSelect = document.getElementById("termSelect");
+
+    let allLessons = {};
+
+    try {
+      allLessons = JSON.parse(localStorage.getItem(lessonsStorageKey)) || {};
+    } catch {
+      allLessons = {};
+    }
+
+    const savedWeek = localStorage.getItem(selectedWeekStorageKey);
+    if (savedWeek === "A" || savedWeek === "B") {
+      weekSelect.value = savedWeek;
+    }
+
+    let savedTitle = {};
+
+    try {
+      savedTitle = JSON.parse(localStorage.getItem(titleStorageKey)) || {};
+    } catch {
+      savedTitle = {};
+    }
+
+    if (savedTitle.year) yearSelect.value = savedTitle.year;
+    if (savedTitle.term) termSelect.value = savedTitle.term;
+
+    function updateTitle() {
+      title.textContent = `${yearSelect.value} ${termSelect.value} Timetable`;
+
+      localStorage.setItem(titleStorageKey, JSON.stringify({
+        year: yearSelect.value,
+        term: termSelect.value
+      }));
+    }
+
+    function toggleTitleOptions() {
+      const willShow = titleOptions.hidden;
+      titleOptions.hidden = !willShow;
+      title.setAttribute("aria-expanded", String(willShow));
+    }
+
+    title.addEventListener("click", toggleTitleOptions);
+
+    title.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleTitleOptions();
+      }
+    });
+
+    function saveTitleAndCloseOptions() {
+      updateTitle();
+      titleOptions.hidden = true;
+      title.setAttribute("aria-expanded", "false");
+    }
+
+    yearSelect.addEventListener("change", saveTitleAndCloseOptions);
+    termSelect.addEventListener("change", saveTitleAndCloseOptions);
+
+    function minutesFromTime(time) {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    }
+
+    function drawTimetable() {
+      const selectedWeek = weekSelect.value;
+      viewingHeading.textContent = `Week ${selectedWeek} Timetable`;
+      timetableBody.replaceChildren();
+
+      const now = new Date();
+      const todayIndex = now.getDay() - 1;
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      periods.forEach((period, periodIndex) => {
+        const row = document.createElement("tr");
+        const heading = document.createElement("th");
+
+        heading.innerHTML =
+          `${period.name}<span class="time">${period.time}</span>`;
+        row.appendChild(heading);
+
+        days.forEach((day, dayIndex) => {
+          const cell = document.createElement("td");
+
+          const isCurrentLesson =
+            todayIndex === dayIndex &&
+            period.editable !== false &&
+            currentMinutes >= minutesFromTime(period.start) &&
+            currentMinutes < minutesFromTime(period.end);
+
+          if (isCurrentLesson) cell.classList.add("current-lesson");
+
+          if (period.editable !== false) {
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Add lesson";
+            input.setAttribute(
+              "aria-label",
+              `Week ${selectedWeek}, ${day}, ${period.name}`
+            );
+            input.value =
+              allLessons[selectedWeek]?.[day]?.[periodIndex] || "";
+
+            input.addEventListener("input", () => {
+              allLessons[selectedWeek] ||= {};
+              allLessons[selectedWeek][day] ||= {};
+              allLessons[selectedWeek][day][periodIndex] = input.value;
+
+              try {
+                localStorage.setItem(
+                  lessonsStorageKey,
+                  JSON.stringify(allLessons)
+                );
+                status.textContent = `Week ${selectedWeek} saved on this device.`;
+              } catch {
+                status.textContent =
+                  "Could not save. Check your browser storage settings.";
+              }
+            });
+
+            cell.appendChild(input);
+          }
+
+          row.appendChild(cell);
+        });
+
+        timetableBody.appendChild(row);
+      });
+    }
+
+    weekSelect.addEventListener("change", () => {
+      localStorage.setItem(selectedWeekStorageKey, weekSelect.value);
+      status.textContent = "";
+      drawTimetable();
+    });
+
+    function updateCurrentPeriod() {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const todayIndex = now.getDay() - 1;
+
+      const activePeriod = periods.find((period) =>
+        currentMinutes >= minutesFromTime(period.start) &&
+        currentMinutes < minutesFromTime(period.end)
+      );
+
+      if (todayIndex < 0 || todayIndex >= days.length) {
+        currentPeriodElement.textContent = "Current period: No school today";
+      } else if (activePeriod) {
+        currentPeriodElement.textContent =
+          `Current period: ${activePeriod.name}`;
+      } else if (currentMinutes < minutesFromTime("08:31")) {
+        currentPeriodElement.textContent = "Current period: Before school";
+      } else if (currentMinutes >= minutesFromTime("14:56")) {
+        currentPeriodElement.textContent = "Current period: School finished";
+      } else {
+        currentPeriodElement.textContent = "Current period: Passing time";
+      }
+
+      drawTimetable();
+    }
+
+    updateTitle();
+    updateCurrentPeriod();
+    setInterval(updateCurrentPeriod, 15_000);
+  </script>
+</body>
+</html>
